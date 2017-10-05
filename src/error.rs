@@ -1,7 +1,13 @@
 use mysql;
+use std;
 
 error_chain!{
     foreign_links {
-        MYSQL(mysql::Error);
+        MySQLError(mysql::Error);
+        IOError(std::io::Error);
+    }
+
+    errors {
+        ParseError(e: String)
     }
 }
