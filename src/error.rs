@@ -1,9 +1,9 @@
-use mysql;
+// use mysql;
 use std;
 
 error_chain!{
     foreign_links {
-        MySQLError(mysql::Error);
+        // MySQLError(mysql::Error);
         IOError(std::io::Error);
     }
 

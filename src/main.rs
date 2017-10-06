@@ -1,8 +1,8 @@
 // External crates:
 #[macro_use] extern crate log;
 #[macro_use] extern crate error_chain;
-#[macro_use] extern crate mysql;
 #[macro_use] extern crate nom;
+#[macro_use] extern crate diesel;
 
 extern crate simplelog;
 extern crate time;
@@ -14,13 +14,13 @@ extern crate clap;
 // Internal modules:
 mod error;
 mod data_parser;
+mod database;
 
 // External modules:
 use clap::{App, Arg};
 use chrono::Local;
 use simplelog::{Config, TermLogger, WriteLogger, LogLevelFilter};
 use log::LogLevel;
-use mysql::{OptsBuilder, Pool};
 
 // System modules:
 use std::fs::OpenOptions;
@@ -30,6 +30,7 @@ use std::io::Read;
 // Internal modules:
 use error::{Result, ResultExt};
 use data_parser::{parse_data};
+use database::{import_to_db};
 
 quick_main!(|| -> Result<()> {
 
@@ -77,7 +78,7 @@ quick_main!(|| -> Result<()> {
     let db_name = matches.value_of("db_name").unwrap();
     let db_user = matches.value_of("db_user").unwrap();
     let db_password = matches.value_of("db_password").unwrap();
-    let station = matches.value_of("station").unwrap();
+    let station_name = matches.value_of("station").unwrap();
     let file_name = matches.value_of("file_name").unwrap();
 
     // Initialize logger
@@ -111,24 +112,9 @@ quick_main!(|| -> Result<()> {
 
     info!("data: {:?}", weatherstation_data);
 
-    let mut db_builder = OptsBuilder::new();
-    db_builder.ip_or_hostname(Some("localhost"))
-           .db_name(Some(db_name))
-           .user(Some(db_user))
-           .pass(Some(db_password));
+    import_to_db(db_name, db_user, db_password, station_name, weatherstation_data)?;
 
-    let db_pool = Pool::new(db_builder)?;
-
-    info!("Connected to database '{}'", db_name);
-
-
-
-
-
-
-
-
-
+    info!("import successfull to database");
 
     Ok(())
 });
