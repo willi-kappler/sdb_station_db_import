@@ -1,6 +1,5 @@
 // External crates:
 #[macro_use] extern crate log;
-#[macro_use] extern crate clap;
 #[macro_use] extern crate error_chain;
 #[macro_use] extern crate mysql;
 #[macro_use] extern crate nom;
@@ -10,6 +9,7 @@ extern crate time;
 extern crate regex;
 extern crate chrono;
 extern crate byteorder;
+extern crate clap;
 
 // Internal modules:
 mod error;
@@ -33,10 +33,10 @@ use data_parser::{parse_data};
 
 quick_main!(|| -> Result<()> {
 
-    let matches = App::new("iridium_weatherstation")
+    let matches = App::new("sbd_db_import")
         .version("0.1")
         .author("Willi Kappler")
-        .about("Import binary SDB files from weatherstations into the database, files sent via e-mail")
+        .about("Import binary SBD files from weatherstations into the database, files sent via e-mail")
         .arg(
             Arg::with_name("db_name")
             .long("db_name")
@@ -68,7 +68,7 @@ quick_main!(|| -> Result<()> {
         .arg(
             Arg::with_name("file_name")
             .long("file_name")
-            .help("The binary SDB file")
+            .help("The binary SBD file")
             .takes_value(true)
             .required(true)
         )
@@ -82,7 +82,7 @@ quick_main!(|| -> Result<()> {
 
     // Initialize logger
     let dt = Local::now();
-    let log_filename = dt.format("sdb_db_import_%Y_%m_%d.log").to_string();
+    let log_filename = dt.format("sbd_db_import_%Y_%m_%d.log").to_string();
 
     let log_config = Config {
         time: Some(LogLevel::Warn),
@@ -101,7 +101,7 @@ quick_main!(|| -> Result<()> {
     }
 
 
-    let mut input_file = File::open(file_name).chain_err(|| format!("Could not open file: '{}'", file_name))?;
+    let mut input_file = File::open(file_name).chain_err(|| format!("Could not open sbd file: '{}'", file_name))?;
     let mut binary_data = Vec::new();
     let data_size = input_file.read_to_end(&mut binary_data)?;
 

@@ -1,5 +1,5 @@
 [package]
-name = "sdb_station_db_import"
+name = "sbd_station_db_import"
 version = "0.1.0"
 authors = ["Willi Kappler <grandor@gmx.de>"]
 
