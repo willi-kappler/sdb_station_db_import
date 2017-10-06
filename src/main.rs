@@ -2,7 +2,6 @@
 #[macro_use] extern crate log;
 #[macro_use] extern crate error_chain;
 #[macro_use] extern crate nom;
-#[macro_use] extern crate diesel;
 
 extern crate simplelog;
 extern crate time;
@@ -10,6 +9,7 @@ extern crate regex;
 extern crate chrono;
 extern crate byteorder;
 extern crate clap;
+extern crate mysql;
 
 // Internal modules:
 mod error;
@@ -38,13 +38,6 @@ quick_main!(|| -> Result<()> {
         .version("0.1")
         .author("Willi Kappler")
         .about("Import binary SBD files from weatherstations into the database, files sent via e-mail")
-        .arg(
-            Arg::with_name("db_name")
-            .long("db_name")
-            .help("Name of the database")
-            .takes_value(true)
-            .required(true)
-        )
         .arg(
             Arg::with_name("db_user")
             .long("db_user")
@@ -75,7 +68,6 @@ quick_main!(|| -> Result<()> {
         )
         .get_matches();
 
-    let db_name = matches.value_of("db_name").unwrap();
     let db_user = matches.value_of("db_user").unwrap();
     let db_password = matches.value_of("db_password").unwrap();
     let station_name = matches.value_of("station").unwrap();
@@ -112,7 +104,7 @@ quick_main!(|| -> Result<()> {
 
     info!("data: {:?}", weatherstation_data);
 
-    import_to_db(db_name, db_user, db_password, station_name, weatherstation_data)?;
+    import_to_db(db_user, db_password, station_name, weatherstation_data)?;
 
     info!("import successfull to database");
 

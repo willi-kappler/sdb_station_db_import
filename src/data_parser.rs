@@ -15,7 +15,7 @@ pub struct SimpleDataType {
     pub date_time: DateTime<Utc>,
     pub solar_battery_voltage: f64,
     pub lithium_battery_voltage: f64,
-    pub wind_diagnose: f64,
+    pub wind_direction: f64,
 }
 
 #[derive(Debug)]
@@ -111,13 +111,13 @@ named!(parse_data_simple<&[u8], WeatherStationData>, do_parse!(
     date_time: parse_date_time >>
     solar_battery_voltage: be_u16 >> // solar battery voltage
     lithium_battery_voltage: be_u16 >> // lithium battery valotage
-    wind_diagnose: be_u16 >> // wind diagnose
+    wind_direction: be_u16 >> // wind diagnose
     (
         WeatherStationData::SimpleData(SimpleDataType {
             date_time: date_time,
             solar_battery_voltage: u16_to_f64(solar_battery_voltage),
             lithium_battery_voltage: u16_to_f64(lithium_battery_voltage),
-            wind_diagnose: u16_to_f64(wind_diagnose),
+            wind_direction: u16_to_f64(wind_direction),
         })
     )
 ));
