@@ -1,10 +1,7 @@
 // External modules:
 
-use chrono::{DateTime, Utc, TimeZone};
-use mysql;
-use mysql::{OptsBuilder, Pool, from_row, Row};
-
-use std;
+use chrono::{NaiveDateTime};
+use mysql::{OptsBuilder, Pool, from_row, Value};
 
 // Internal modules:
 use error::{Result};
@@ -35,7 +32,7 @@ use data_parser::{WeatherStationData, SimpleDataType, MultipleDataType};
 | air_pressure          | double           | YES  |     | NULL    |                |
 */
 
-fn get_id_from_datetime(db_pool: &Pool, table_name: &str, station_name: &str, datetime: DateTime<Utc>) -> Result<Option<u32>> {
+fn get_id_from_datetime(db_pool: &Pool, table_name: &str, station_name: &str, datetime: NaiveDateTime) -> Result<Option<u32>> {
     // select id, battery_voltage from battery_data where timestamp = '2017-10-05 00:00:00' and station = 'Santa_Gracia';
     let query = format!("SELECT id FROM {} WHERE timestamp = '{}' and station = '{}'", table_name, datetime, station_name);
     // let rows = db_pool.prep_exec(query, ())?.map(|row: std::result::Result<Row, mysql::Error>| from_row(row?));
@@ -68,6 +65,14 @@ fn import_simple(db_pool: Pool, station_name: &str, data: SimpleDataType) -> Res
                 li_battery_voltage = :li_battery_voltage,
                 wind_dir = :wind_dir
             WHERE id = '{}'", id);
+
+            db_pool.prep_exec(query, (
+                Value::from(data.date_time),
+                Value::from(station_name),
+                Value::from(data.solar_battery_voltage),
+                Value::from(data.lithium_battery_voltage),
+                Value::from(data.wind_direction)
+            ))?;
         },
         None => {
             let query = format!("INSERT INTO battery_data (
@@ -84,6 +89,13 @@ fn import_simple(db_pool: Pool, station_name: &str, data: SimpleDataType) -> Res
                 :wind_dir
             )");
 
+            db_pool.prep_exec(query, (
+                Value::from(data.date_time),
+                Value::from(station_name),
+                Value::from(data.solar_battery_voltage),
+                Value::from(data.lithium_battery_voltage),
+                Value::from(data.wind_direction)
+            ))?;
         }
     }
 
@@ -95,19 +107,34 @@ fn import_multiple(db_pool: Pool, station_name: &str, data: Vec<MultipleDataType
         match get_id_from_datetime(&db_pool, "multiple_data", station_name, data.date_time)? {
             Some(id) => {
                 let query = format!("UPDATE battery_data SET
-                timestamp = :timestamp,
-                station = :station,
-                air_temperature = :air_temperature,
-                air_relative_humidity = :air_relative_humidity,
-                solar_radiation = :solar_radiation,
-                soil_water_content = :soil_water_content,
-                soil_temperature = :soil_temperature,
-                wind_speed = :wind_speed,
-                wind_max = :wind_max,
-                wind_direction = :wind_direction,
-                precipitation = :precipitation,
-                air_pressure = :air_pressure
+                    timestamp = :timestamp,
+                    station = :station,
+                    air_temperature = :air_temperature,
+                    air_relative_humidity = :air_relative_humidity,
+                    solar_radiation = :solar_radiation,
+                    soil_water_content = :soil_water_content,
+                    soil_temperature = :soil_temperature,
+                    wind_speed = :wind_speed,
+                    wind_max = :wind_max,
+                    wind_direction = :wind_direction,
+                    precipitation = :precipitation,
+                    air_pressure = :air_pressure
                 WHERE id = '{}'", id);
+
+                db_pool.prep_exec(query, (
+                    Value::from(data.date_time),
+                    Value::from(station_name),
+                    Value::from(data.air_temperature),
+                    Value::from(data.air_relative_humidity),
+                    Value::from(data.solar_radiation),
+                    Value::from(data.soil_water_content),
+                    Value::from(data.soil_temperature),
+                    Value::from(data.wind_speed),
+                    Value::from(data.wind_max),
+                    Value::from(data.wind_direction),
+                    Value::from(data.precipitation),
+                    Value::from(data.air_pressure)
+                ))?;
             },
             None => {
                 let query = format!("INSERT INTO multiple_data (
@@ -137,6 +164,21 @@ fn import_multiple(db_pool: Pool, station_name: &str, data: Vec<MultipleDataType
                     :precipitation,
                     :air_pressure
                 )");
+
+                db_pool.prep_exec(query, (
+                    Value::from(data.date_time),
+                    Value::from(station_name),
+                    Value::from(data.air_temperature),
+                    Value::from(data.air_relative_humidity),
+                    Value::from(data.solar_radiation),
+                    Value::from(data.soil_water_content),
+                    Value::from(data.soil_temperature),
+                    Value::from(data.wind_speed),
+                    Value::from(data.wind_max),
+                    Value::from(data.wind_direction),
+                    Value::from(data.precipitation),
+                    Value::from(data.air_pressure)
+                ))?;
             }
         }
     }

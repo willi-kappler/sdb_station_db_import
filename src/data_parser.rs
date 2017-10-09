@@ -1,18 +1,18 @@
 
 // External modules:
 use nom::{le_u32, be_u16, IResult};
-use chrono::{DateTime, Utc, TimeZone};
+use chrono::{NaiveDateTime};
 
 // System modules:
 use std::f64::{INFINITY, NEG_INFINITY, NAN};
 
 
 // Internal modules:
-use error::{Result, ErrorKind};
+use error::{Result};
 
 #[derive(Debug)]
 pub struct SimpleDataType {
-    pub date_time: DateTime<Utc>,
+    pub date_time: NaiveDateTime,
     pub solar_battery_voltage: f64,
     pub lithium_battery_voltage: f64,
     pub wind_direction: f64,
@@ -20,7 +20,7 @@ pub struct SimpleDataType {
 
 #[derive(Debug)]
 pub struct MultipleDataType {
-    pub date_time: DateTime<Utc>,
+    pub date_time: NaiveDateTime,
     pub air_temperature: f64,
     pub air_relative_humidity: f64,
     pub solar_radiation: f64,
@@ -99,10 +99,10 @@ fn u16_to_f64(data: u16) -> f64 {
 
 
 
-named!(parse_date_time<&[u8], DateTime<Utc> >, do_parse!(
+named!(parse_date_time<&[u8], NaiveDateTime >, do_parse!(
     seconds: le_u32 >>
     le_u32 >> // unused, since all zero
-    (Utc.timestamp((seconds + 631152000) as i64, 0))
+    (NaiveDateTime::from_timestamp((seconds + 631152000) as i64, 0))
     // date_time: 2017-09-13T13:00:00Z, 631152000
     // date_time: 2017-09-13T12:00:00Z, 631148400
 ));
@@ -166,6 +166,9 @@ named!(multiple_or_simple<&[u8], WeatherStationData>, do_parse!(
 pub fn parse_data(binary_data: Vec<u8>) -> Result<WeatherStationData> {
     match multiple_or_simple(&binary_data) {
         IResult::Done(rest, result) => {
+            if rest.len() > 0 {
+                info!("parse rest: {:?}", rest);
+            }
             Ok(result)
         },
         IResult::Error(err) => {
