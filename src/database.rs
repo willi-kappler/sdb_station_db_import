@@ -1,8 +1,10 @@
 // External modules:
 
 use chrono::{DateTime, Utc, TimeZone};
-use mysql::{OptsBuilder, Pool, from_row};
+use mysql;
+use mysql::{OptsBuilder, Pool, from_row, Row};
 
+use std;
 
 // Internal modules:
 use error::{Result};
@@ -33,34 +35,53 @@ use data_parser::{WeatherStationData, SimpleDataType, MultipleDataType};
 | air_pressure          | double           | YES  |     | NULL    |                |
 */
 
-fn get_id_from_datetime(db_pool: &Pool, table_name: &str, station_name: &str, datetime: DateTime<Utc>) -> Result<u32> {
+fn get_id_from_datetime(db_pool: &Pool, table_name: &str, station_name: &str, datetime: DateTime<Utc>) -> Result<Option<u32>> {
     // select id, battery_voltage from battery_data where timestamp = '2017-10-05 00:00:00' and station = 'Santa_Gracia';
-    let query = format!("SELECT id, battery_voltage FROM {} WHERE timestamp = '{}' and station = '{}'", table_name, datetime, station_name);
-    let rows = db_pool.prep_exec(query, ())?;
+    let query = format!("SELECT id FROM {} WHERE timestamp = '{}' and station = '{}'", table_name, datetime, station_name);
+    // let rows = db_pool.prep_exec(query, ())?.map(|row: std::result::Result<Row, mysql::Error>| from_row(row?));
 
-    let mut counter = 0;
-    let mut id: u32 = 0;
-    let mut battery_voltage: f64 = 0.0;
+    let mut result: Vec<(u32,)> = Vec::new();
 
-    for row in rows {
-        let (id, battery_voltage): (u32, f64) = from_row(row?);
-        info!("id: {}, battery_voltage: {}", id, battery_voltage);
-        counter += 1;
+    for row in db_pool.prep_exec(query, ())? {
+        result.push(from_row(row?));
     }
 
-    if counter == 1 {
-        Ok(id)
+    if result.len() == 0 {
+        info!("no entry found with datetime: {}", datetime);
+        Ok(None)
+    } else if result.len() == 1 {
+        let (id,) = result[0];
+        info!("id from database: {}, datetime: {}", id, datetime);
+        Ok(Some(id))
     } else {
-        bail!("");
+        bail!("expected exactly one id from database but got: {:?}", result);
     }
 }
 
 fn import_simple(db_pool: Pool, station_name: &str, data: SimpleDataType) -> Result<()> {
+    match get_id_from_datetime(&db_pool, "battery_data", station_name, data.date_time)? {
+        Some(id) => {
+
+        },
+        None => {
+
+        }
+    }
 
     Ok(())
 }
 
 fn import_multiple(db_pool: Pool, station_name: &str, data: Vec<MultipleDataType>) -> Result<()> {
+    for data in data {
+        match get_id_from_datetime(&db_pool, "multiple_data", station_name, data.date_time)? {
+            Some(id) => {
+
+            },
+            None => {
+                
+            }
+        }
+    }
 
     Ok(())
 }
