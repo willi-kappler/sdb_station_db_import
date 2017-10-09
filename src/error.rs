@@ -6,8 +6,4 @@ error_chain!{
         MySQLError(mysql::Error);
         IOError(std::io::Error);
     }
-
-    errors {
-        ParseError(e: String)
-    }
 }

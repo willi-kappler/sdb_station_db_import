@@ -169,10 +169,10 @@ pub fn parse_data(binary_data: Vec<u8>) -> Result<WeatherStationData> {
             Ok(result)
         },
         IResult::Error(err) => {
-            Err(ErrorKind::ParseError(format!("error: {:?}", err)).into())
+            bail!("parse error: {:?}", err)
         },
         IResult::Incomplete(needed) => {
-            Err(ErrorKind::ParseError(format!("more input needed: {:?}", needed)).into())
+            bail!("parse error, more input needed: {:?}", needed)
         }
     }
 }
