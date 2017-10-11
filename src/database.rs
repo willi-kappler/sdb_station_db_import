@@ -58,7 +58,13 @@ fn get_id_from_datetime(db_pool: &Pool, table_name: &str, station_name: &str, da
 fn import_simple(db_pool: Pool, station_name: &str, data: SimpleDataType) -> Result<()> {
     match get_id_from_datetime(&db_pool, "battery_data", station_name, data.date_time)? {
         Some(id) => {
-            let query = format!("UPDATE battery_data SET timestamp = :timestamp, station = :station, battery_voltage = :battery_voltage, li_battery_voltage = :li_battery_voltage, wind_dir = :wind_dir WHERE id = '{}'", id);
+            let query = format!("UPDATE battery_data SET
+                timestamp = :timestamp,
+                station = :station,
+                battery_voltage = :battery_voltage,
+                li_battery_voltage = :li_battery_voltage,
+                wind_dir = :wind_dir
+            WHERE id = '{}'", id);
 
             info!("query: '{}'", query);
 
@@ -73,7 +79,19 @@ fn import_simple(db_pool: Pool, station_name: &str, data: SimpleDataType) -> Res
             info!("single with id");
         },
         None => {
-            let query = format!("INSERT INTO battery_data (timestamp, station, battery_voltage, li_battery_voltage, wind_dir) VALUES (:timestamp, :station, :battery_voltage, :li_battery_voltage, :wind_dir)");
+            let query = format!("INSERT INTO battery_data (
+                timestamp,
+                station,
+                battery_voltage,
+                li_battery_voltage,
+                wind_dir
+            ) VALUES (
+                :timestamp,
+                :station,
+                :battery_voltage,
+                :li_battery_voltage,
+                :wind_dir
+            )");
 
             info!("query: '{}'", query);
 
@@ -96,9 +114,20 @@ fn import_multiple(db_pool: Pool, station_name: &str, data: Vec<MultipleDataType
     for data in data {
         match get_id_from_datetime(&db_pool, "multiple_data", station_name, data.date_time)? {
             Some(id) => {
-                let query = format!("UPDATE multiple_data SET timestamp = :timestamp, station = :station, air_temperature = :air_temperature, air_relative_humidity = :air_relative_humidity, solar_radiation = :solar_radiation,
-                    soil_water_content = :soil_water_content, soil_temperature = :soil_temperature, wind_speed = :wind_speed, wind_max = :wind_max, wind_direction = :wind_direction, precipitation = :precipitation,
-                    air_pressure = :air_pressure WHERE id = '{}'", id);
+                let query = format!("UPDATE multiple_data SET
+                    timestamp = :timestamp,
+                    station = :station,
+                    air_temperature = :air_temperature,
+                    air_relative_humidity = :air_relative_humidity,
+                    solar_radiation = :solar_radiation,
+                    soil_water_content = :soil_water_content,
+                    soil_temperature = :soil_temperature,
+                    wind_speed = :wind_speed,
+                    wind_max = :wind_max,
+                    wind_direction = :wind_direction,
+                    precipitation = :precipitation,
+                    air_pressure = :air_pressure
+                WHERE id = '{}'", id);
 
                 info!("query: '{}'", query);
 
@@ -120,9 +149,33 @@ fn import_multiple(db_pool: Pool, station_name: &str, data: Vec<MultipleDataType
                 info!("multiple with id");
             },
             None => {
-                let query = format!("INSERT INTO multiple_data (timestamp, station, air_temperature, air_relative_humidity, solar_radiation, soil_water_content, soil_temperature,
-                    wind_speed, wind_max, wind_direction, precipitation, air_pressure) VALUES (:timestamp, :station, :air_temperature, :air_relative_humidity,
-                    :solar_radiation, :soil_water_content, :soil_temperature, :wind_speed, :wind_max, :wind_direction, :precipitation, :air_pressure)");
+                let query = format!("INSERT INTO multiple_data (
+                    timestamp,
+                    station,
+                    air_temperature,
+                    air_relative_humidity,
+                    solar_radiation,
+                    soil_water_content,
+                    soil_temperature,
+                    wind_speed,
+                    wind_max,
+                    wind_direction,
+                    precipitation,
+                    air_pressure
+                ) VALUES (
+                    :timestamp,
+                    :station,
+                    :air_temperature,
+                    :air_relative_humidity,
+                    :solar_radiation,
+                    :soil_water_content,
+                    :soil_temperature,
+                    :wind_speed,
+                    :wind_max,
+                    :wind_direction,
+                    :precipitation,
+                    :air_pressure
+                )");
 
                 info!("query: '{}'", query);
 
