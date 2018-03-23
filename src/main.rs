@@ -2,6 +2,7 @@
 #[macro_use] extern crate log;
 #[macro_use] extern crate error_chain;
 #[macro_use] extern crate nom;
+#[macro_use] extern crate combine;
 
 extern crate simplelog;
 extern crate time;
@@ -35,7 +36,7 @@ use database::{import_to_db};
 quick_main!(|| -> Result<()> {
 
     let matches = App::new("sbd_db_import")
-        .version("0.1")
+        .version("0.2")
         .author("Willi Kappler")
         .about("Import binary SBD files from weatherstations into the database, files sent via e-mail")
         .arg(
@@ -93,6 +94,15 @@ quick_main!(|| -> Result<()> {
         warn!("Could not open log fle: '{}', using sdtout instead!", &log_filename);
     }
 
+    if file_name.starts_with("300025060000500") {
+        info!("Pan_de_Azucar");
+    } else if file_name.starts_with("300025060004660") {
+        info!("La_Campana");
+    } else if file_name.starts_with("300025060007390") {
+        info!("Santa_Gracia");
+    } else if file_name.starts_with("300025060008580") {
+        info!("Nahuelbuta");
+    }
 
     let mut input_file = File::open(file_name).chain_err(|| format!("Could not open sbd file: '{}'", file_name))?;
     let mut binary_data = Vec::new();

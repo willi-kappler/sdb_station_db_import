@@ -2,6 +2,8 @@
 // External modules:
 use nom::{le_u32, be_u16, IResult};
 use chrono::{NaiveDateTime};
+use combine::{RangeStream};
+use combine::parser::byte::num;
 
 // System modules:
 use std::f64::{INFINITY, NEG_INFINITY, NAN};
@@ -10,7 +12,7 @@ use std::f64::{INFINITY, NEG_INFINITY, NAN};
 // Internal modules:
 use error::{Result};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct SimpleDataType {
     pub date_time: NaiveDateTime,
     pub solar_battery_voltage: f64,
@@ -18,7 +20,7 @@ pub struct SimpleDataType {
     pub wind_direction: f64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct MultipleDataType {
     pub date_time: NaiveDateTime,
     pub air_temperature: f64,
@@ -33,7 +35,7 @@ pub struct MultipleDataType {
     pub air_pressure: f64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum WeatherStationData {
     SimpleData(SimpleDataType),
     MultipleData(Vec<MultipleDataType>),
@@ -178,4 +180,119 @@ pub fn parse_data(binary_data: Vec<u8>) -> Result<WeatherStationData> {
             bail!("parse error, more input needed: {:?}", needed)
         }
     }
+}
+
+
+
+// Use Combine parser combinator crate below:
+
+parser!{
+    fn parse_date_time2['a, I]()(I) -> NaiveDateTime where [I: RangeStream<Item = u8, Range = &'a [u8]>,] {
+        (num::le_u32(), num::le_u32()).map(|(seconds, _) : (u32, u32)| {
+            NaiveDateTime::from_timestamp((seconds + 631152000) as i64, 0)
+        })
+    }
+}
+
+parser!{
+    fn parse_data_simple2['a, I]()(I) -> WeatherStationData where [I: RangeStream<Item = u8, Range = &'a [u8]>,] {
+        (parse_date_time2(),
+            num::be_u16(),
+            num::be_u16(),
+            num::be_u16()).map(|(
+
+            date_time,
+            solar_battery_voltage,
+            lithium_battery_voltage,
+            wind_direction) : (
+
+            NaiveDateTime,
+            u16,
+            u16,
+            u16)| {
+                
+            WeatherStationData::SimpleData(SimpleDataType {
+                date_time: date_time,
+                solar_battery_voltage: u16_to_f64(solar_battery_voltage),
+                lithium_battery_voltage: u16_to_f64(lithium_battery_voltage),
+                wind_direction: u16_to_f64(wind_direction),
+            })
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use chrono::{NaiveDateTime};
+    use combine::{Parser};
+
+    use super::{
+        SimpleDataType,
+        MultipleDataType,
+        WeatherStationData,
+        parse_data,
+        parse_date_time2,
+        parse_data_simple2
+    };
+
+    #[test]
+    fn test_parse_binary_data_battery1() {
+        let result = parse_data(vec![0, 141, 64, 50, 0, 0, 0, 0, 68, 252, 96, 0, 0, 0]).unwrap();
+        let date_time = NaiveDateTime::parse_from_str("2016-09-19 00:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+        assert_eq!(result,
+            WeatherStationData::SimpleData(SimpleDataType {
+                date_time: date_time,
+                solar_battery_voltage: 12.76,
+                lithium_battery_voltage: 0.0,
+                wind_direction: 0.0,
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_binary_data_full1() {
+        let result = parse_data(vec![0, 141, 64, 50, 0, 0, 0, 0, 69, 222, 35, 229, 92, 249, 96, 77, 70, 100, 97, 103, 98, 238, 43, 190, 99, 232, 3, 194]).unwrap();
+        let date_time = NaiveDateTime::parse_from_str("2016-09-19 00:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+        assert_eq!(result,
+            WeatherStationData::MultipleData(vec![MultipleDataType {
+                date_time: date_time,
+                air_temperature: 15.02,
+                air_relative_humidity: 99.7,
+                solar_radiation: 74.17,
+                soil_water_content: 0.077,
+                soil_temperature: 16.36,
+                wind_speed: 0.359,
+                wind_max: 0.75,
+                wind_direction: 300.6,
+                precipitation: 1.0,
+                air_pressure: 962.0,
+            }])
+        );
+    }
+
+    #[test]
+    fn test_parse_date_time2() {
+        let input = vec![0, 141, 64, 50, 0, 0, 0, 0];
+        let rest = vec![];
+        let result = parse_date_time2().parse(input.as_slice());
+        let date_time = NaiveDateTime::parse_from_str("2016-09-19 00:00:00", "%Y-%m-%d %H:%M:%S").unwrap();
+
+        assert_eq!(result, Ok((date_time, rest.as_slice())));
+    }
+
+    #[test]
+    fn test_parse_data_simple2() {
+        let input = vec![0, 141, 64, 50, 0, 0, 0, 0, 68, 252, 96, 0, 0, 0];
+        let rest = vec![];
+        let result = parse_data_simple2().parse(input.as_slice());
+        let data_simple = WeatherStationData::SimpleData(SimpleDataType{
+            date_time: NaiveDateTime::parse_from_str("2016-09-19 00:00:00", "%Y-%m-%d %H:%M:%S").unwrap(),
+            solar_battery_voltage: 12.76,
+            lithium_battery_voltage: 0.0,
+            wind_direction: 0.0,
+        });
+
+        assert_eq!(result, Ok((data_simple, rest.as_slice())));
+    }
+
 }
